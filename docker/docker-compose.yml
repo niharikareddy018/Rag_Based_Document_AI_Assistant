@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL Database with pgvector Extension
+  postgres-vector:
+    image: pgvector/pgvector:pg16
+    container_name: doclens_pgvector
+    restart: always
+    environment:
+      POSTGRES_DB: vectordb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: your_secure_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+      - ../database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. Ollama Local LLM Server (Llama 3 & nomic-embed-text)
+  ollama:
+    image: ollama/ollama:latest
+    container_name: doclens_ollama
+    restart: always
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
+
+  # 3. RabbitMQ Message Broker (Async chunking & embedding queues)
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: doclens_rabbitmq
+    restart: always
+    ports:
+      - "5672:5672"     # AMQP protocol
+      - "15672:15672"   # Management Web UI (guest:guest)
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  # 4. Java Spring Boot Vector Service
+  vector-service:
+    build:
+      context: ../vector_service
+      dockerfile: Dockerfile
+    container_name: doclens_vector_service
+    restart: always
+    depends_on:
+      postgres-vector:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+      rabbitmq:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-vector:5432/vectordb
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: your_secure_password
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      OLLAMA_BASE_URL: http://ollama:11434
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - ../file_vault:/app/file_vault
+
+  # 5. Frontend React / Vite Web Application
+  frontend-ui:
+    build:
+      context: ../frontend-ui
+      dockerfile: Dockerfile
+    container_name: doclens_frontend_ui
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      VITE_SPRING_GATEWAY_URL: http://localhost:8086
+    depends_on:
+      - vector-service
+
+volumes:
+  pgvector_data:
+  ollama_models:
+  rabbitmq_data:

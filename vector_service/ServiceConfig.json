@@ -1,0 +1,36 @@
+{
+  "serviceName": "vector_service",
+  "version": "1.0.0",
+  "port": 8080,
+  "ollama": {
+    "baseUrl": "http://localhost:11434",
+    "generationModel": "llama3:8b",
+    "embeddingModel": "nomic-embed-text",
+    "temperature": 0.2,
+    "topP": 0.9
+  },
+  "database": {
+    "host": "localhost",
+    "port": 5432,
+    "name": "vectordb",
+    "user": "postgres",
+    "password": "your_secure_password",
+    "schema": "public",
+    "tableName": "document_chunks",
+    "vectorDimension": 768
+  },
+  "fileVault": {
+    "storagePath": "./file_vault",
+    "allowedExtensions": [".pdf", ".docx", ".txt", ".md", ".csv"],
+    "maxFileSizeMb": 30,
+    "chunkSize": 500,
+    "chunkOverlap": 80
+  },
+  "cors": {
+    "allowedOrigins": [
+      "http://localhost:3000",
+      "http://localhost:5173",
+      "http://127.0.0.1:3000"
+    ]
+  }
+}

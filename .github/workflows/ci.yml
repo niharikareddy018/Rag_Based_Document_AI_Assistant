@@ -1,0 +1,37 @@
+name: DocLens CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: maven
+
+    - name: Set up and Build with mvnd (Maven Daemon)
+      run: |
+        curl -fsSL https://archive.apache.org/dist/maven/mvnd/1.0.2/maven-mvnd-1.0.2-linux-amd64.tar.gz | sudo tar -xz -C /usr/local
+        sudo ln -s /usr/local/maven-mvnd-1.0.2-linux-amd64/bin/mvnd /usr/local/bin/mvnd
+        mvnd -B clean package --file pom.xml -DskipTests
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Build Frontend UI
+      run: |
+        npm install
+        npm run build

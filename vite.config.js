@@ -1,0 +1,45 @@
+import tailwindcss from "@tailwindcss/vite";
+import react from "@vitejs/plugin-react";
+import path from "path";
+import esbuild from "esbuild";
+import { defineConfig } from "vite";
+
+const jsxInJsPlugin = () => ({
+  name: "jsx-in-js",
+  enforce: "pre",
+  transform(code, id) {
+    if (id.includes("node_modules") || !id.includes("/src/")) return;
+    const cleanId = id.split("?")[0];
+    if (cleanId.endsWith(".js")) {
+      const res = esbuild.transformSync(code, {
+        loader: "jsx",
+        jsx: "automatic",
+      });
+      return {
+        code: res.code,
+        map: null,
+      };
+    }
+  },
+});
+
+export default defineConfig(() => {
+  return {
+    plugins: [
+      jsxInJsPlugin(),
+      react({
+        include: /\.jsx$/,
+      }),
+      tailwindcss(),
+    ],
+    resolve: {
+      alias: {
+        "@": path.resolve(__dirname, "."),
+      },
+    },
+    server: {
+      hmr: process.env.DISABLE_HMR !== "true",
+      watch: process.env.DISABLE_HMR === "true" ? null : {},
+    },
+  };
+});

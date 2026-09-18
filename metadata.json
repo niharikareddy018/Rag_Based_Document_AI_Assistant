@@ -1,0 +1,6 @@
+{
+  "name": "DocLens AI",
+  "description": "Clean, modern RAG-based AI Document Assistant to upload, process, and converse with documents with verified source citations and split-view reader.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
